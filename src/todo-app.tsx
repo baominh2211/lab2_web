@@ -1,159 +1,269 @@
-/** @jsx createElement */
-import { createElement, useState, ComponentProps } from './jsx-runtime';
+import { createElement, useState } from "./jsx-runtime";
 
-// TypeScript interfaces
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
-  createdAt: number;
 }
 
-interface TodoItemProps extends ComponentProps {
-  todo: Todo;
-  onToggle: (id: number) => void;
-  onDelete: (id: number) => void;
-}
+// Simple storage using a module-level variable that persists during the session
+let persistedTodos: Todo[] = [];
+let hasLoadedFromLocalStorage = false;
 
-interface AddTodoFormProps extends ComponentProps {
-  onAdd: (text: string) => void;
-}
+const TodoApp = () => {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [getInput] = useState<any>({ currentValue: "" });
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [loaded, setLoaded] = useState(false);
 
-// TodoItem component
-const TodoItem = (props: TodoItemProps) => {
-  const { todo, onToggle, onDelete } = props;
-  
-  return (
-    <li className={`todo-item ${todo.completed ? 'completed' : ''}`}>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => onToggle(todo.id)}
-      />
-      <span className={`todo-text ${todo.completed ? 'completed' : ''}`}>
-        {todo.text}
-      </span>
-      <button
-        className="todo-delete"
-        onClick={() => onDelete(todo.id)}
-      >
-        🗑️ Delete
-      </button>
-    </li>
-  );
-};
+  // Load todos from localStorage on mount
+  const loadTodos = () => {
+    if (!hasLoadedFromLocalStorage) {
+      try {
+        const saved = localStorage.getItem('todos');
+        if (saved) {
+          persistedTodos = JSON.parse(saved);
+          setTodos(persistedTodos);
+        }
+      } catch (error) {
+        console.log('Could not load todos');
+      }
+      hasLoadedFromLocalStorage = true;
+    } else {
+      setTodos(persistedTodos);
+    }
+    setLoaded(true);
+  };
 
-// AddTodoForm component
-const AddTodoForm = (props: AddTodoFormProps) => {
-  const { onAdd } = props;
-  
-  // State for input value
-  const [getInputValue, setInputValue] = useState('');
-  const inputValue = getInputValue();
-  
-  // Handle form submission
-  const handleSubmit = (e: Event) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      onAdd(inputValue.trim());
-      setInputValue('');
+  // Save todos to localStorage
+  const saveTodos = (newTodos: Todo[]) => {
+    persistedTodos = newTodos;
+    try {
+      localStorage.setItem('todos', JSON.stringify(newTodos));
+    } catch (error) {
+      console.error('Failed to save todos:', error);
     }
   };
-  
-  // Handle input change
-  const handleInput = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    setInputValue(target.value);
-  };
-  
-  return (
-    <form className="add-todo-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="What needs to be done?"
-        value={inputValue}
-        onInput={handleInput}
-      />
-      <button type="submit" className="btn-primary">
-        ➕ Add Todo
-      </button>
-    </form>
-  );
-};
 
-// Main TodoApp component
-const TodoApp = () => {
-  // State for todos array
-  const [getTodos, setTodos] = useState<Todo[]>([]);
-  const todos = getTodos();
-  
-  // Function to add a new todo
-  const addTodo = (text: string) => {
-    const newTodo: Todo = {
-      id: Date.now(),
-      text,
-      completed: false,
-      createdAt: Date.now()
-    };
-    setTodos([...todos, newTodo]);
+  // Load on first render
+  if (!loaded()) {
+    loadTodos();
+  }
+
+  const handleAdd = () => {
+    const text = (getInput as any).currentValue?.trim() || "";
+    if (!text) return;
+    const newTodos = [...todos(), { id: Date.now(), text, completed: false }];
+    setTodos(newTodos);
+    saveTodos(newTodos);
+    (getInput as any).currentValue = "";
+    const inputEl = (getInput as any).ref;
+    if (inputEl) inputEl.value = "";
   };
-  
-  // Function to toggle todo completion
-  const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map(todo =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
+
+  const handleToggle = (id: number) => {
+    const newTodos = todos().map((t) =>
+      t.id === id ? { ...t, completed: !t.completed } : t
     );
+    setTodos(newTodos);
+    saveTodos(newTodos);
   };
-  
-  // Function to delete a todo
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+
+  const handleDelete = (id: number) => {
+    const newTodos = todos().filter((t) => t.id !== id);
+    setTodos(newTodos);
+    saveTodos(newTodos);
   };
-  
-  // Calculate statistics
-  const totalTodos = todos.length;
-  const completedTodos = todos.filter(todo => todo.completed).length;
-  const activeTodos = totalTodos - completedTodos;
-  
+
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to delete all todos?')) {
+      setTodos([]);
+      saveTodos([]);
+    }
+  };
+
+  const filteredTodos =
+    filter() === "active"
+      ? todos().filter((t) => !t.completed)
+      : filter() === "completed"
+      ? todos().filter((t) => t.completed)
+      : todos();
+
+  const stats = {
+    completed: todos().filter((t) => t.completed).length,
+    total: todos().length,
+  };
+
   return (
-    <div className="todo-app">
-      <h2>✅ Todo List</h2>
-      
-      <AddTodoForm onAdd={addTodo} />
-      
-      {todos.length === 0 ? (
-        <div className="empty-state">
-          No todos yet. Add one above to get started!
-        </div>
-      ) : (
-        <ul className="todo-list">
-          {todos.map(todo => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
+    <div
+      style={{
+        marginTop: "32px",
+        padding: "20px",
+        background: "#111827",
+        borderRadius: "12px",
+        boxShadow: "0 0 10px rgba(0,0,0,0.4)",
+        color: "#f3f4f6",
+      }}
+    >
+      <h2
+        style={{
+          marginBottom: "16px",
+          color: "#e5e7eb",
+          fontSize: "20px",
+          textAlign: "center",
+        }}
+      >
+        🧾 Todo Tracker (Dark)
+      </h2>
+
+      {/* input + button */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "16px",
+          alignItems: "center",
+        }}
+      >
+        <input
+          defaultValue=""
+          ref={(el: any) => ((getInput as any).ref = el)}
+          onInput={(e: any) => ((getInput as any).currentValue = e.target.value)}
+          onKeyPress={(e: any) => {
+            if (e.key === 'Enter') handleAdd();
+          }}
+          placeholder="Add a task..."
+          style={{
+            flex: 1,
+            borderRadius: "6px",
+            border: "1px solid #374151",
+            background: "#1f2937",
+            color: "#f9fafb",
+            padding: "8px",
+            fontSize: "14px",
+          }}
+        />
+        <button
+          onClick={handleAdd}
+          style={{
+            background: "#2563eb",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            padding: "8px 16px",
+            cursor: "pointer",
+          }}
+        >
+          Add
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "12px",
+        }}
+      >
+        <span style={{ color: "#9ca3af", fontSize: "13px" }}>
+          ✅ {stats.completed} / {stats.total} done
+        </span>
+
+        <div style={{ display: "flex", gap: "6px" }}>
+          {["all", "active", "completed"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilter(type as any)}
+              style={{
+                background: filter() === type ? "#4f46e5" : "#1f2937",
+                color: filter() === type ? "#fff" : "#d1d5db",
+                border: "1px solid #374151",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                cursor: "pointer",
+                fontSize: "12px",
+              }}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
           ))}
-        </ul>
-      )}
-      
-      <div className="todo-summary">
-        <div>
-          <div>Total</div>
-          <strong>{totalTodos}</strong>
-        </div>
-        <div>
-          <div>Completed</div>
-          <strong>{completedTodos}</strong>
-        </div>
-        <div>
-          <div>Active</div>
-          <strong>{activeTodos}</strong>
         </div>
       </div>
+
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {filteredTodos.length === 0 ? (
+          <li
+            style={{
+              textAlign: "center",
+              color: "#6b7280",
+              padding: "10px 0",
+            }}
+          >
+            Nothing here
+          </li>
+        ) : (
+          filteredTodos.map((t) => (
+            <li
+              key={t.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: "#1f2937",
+                border: "1px solid #374151",
+              }}
+            >
+              <span
+                onClick={() => handleToggle(t.id)}
+                style={{
+                  textDecoration: t.completed ? "line-through" : "none",
+                  color: t.completed ? "#6b7280" : "#f9fafb",
+                  cursor: "pointer",
+                  flex: 1,
+                }}
+              >
+                {t.text}
+              </span>
+              <button
+                onClick={() => handleDelete(t.id)}
+                style={{
+                  background: "#dc2626",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "4px 8px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+      {todos().length > 0 && (
+        <div style={{ marginTop: "16px", textAlign: "center" }}>
+          <button
+            onClick={handleClearAll}
+            style={{
+              background: "#374151",
+              color: "#9ca3af",
+              border: "1px solid #4b5563",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "12px",
+              cursor: "pointer",
+            }}
+          >
+            Clear All
+          </button>
+        </div>
+      )}
     </div>
   );
 };

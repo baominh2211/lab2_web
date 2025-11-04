@@ -1,12 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  esbuild: {
-    jsxFactory: 'createElement',
-    jsxFragment: 'createFragment',
+  root: "src",
+  build: {
+    outDir: "../dist",
   },
-  server: {
-    port: 3000,
-    open: true
-  }
 });

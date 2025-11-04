@@ -1,71 +1,31 @@
-/** @jsx createElement */
-import { createElement, useState, ComponentProps } from './jsx-runtime';
+import { createElement, useState } from "./jsx-runtime";
 
-// ButtonProps interface
-interface ButtonProps extends ComponentProps {
-  onClick?: () => void;
-  className?: string;
+interface ButtonProps {
+  onClick: () => void;
+  children?: any;
 }
 
-// Button component
-const Button = (props: ButtonProps) => {
-  const { onClick, children, className = '' } = props;
-  
-  return (
-    <button onClick={onClick} className={className}>
-      {children}
-    </button>
-  );
-};
+const Button = ({ onClick, children }: ButtonProps) => (
+  <button onClick={onClick}>{children}</button>
+);
 
-// CounterProps interface
-interface CounterProps extends ComponentProps {
+interface CounterProps {
   initialCount?: number;
 }
 
-// Counter component with state management
-const Counter = (props: CounterProps) => {
-  const { initialCount = 0 } = props;
-  
-  // Use useState for count value
+const Counter = ({ initialCount = 0 }: CounterProps) => {
   const [getCount, setCount] = useState(initialCount);
-  const count = getCount();
-  
-  // Handler functions
-  const increment = () => {
-    setCount(count + 1);
-  };
-  
-  const decrement = () => {
-    setCount(count - 1);
-  };
-  
-  const reset = () => {
-    setCount(initialCount);
-  };
-  
-  const incrementBy5 = () => {
-    setCount(count + 5);
-  };
-  
-  // Return JSX structure
+  const inc = () => setCount(getCount() + 1);
+  const dec = () => setCount(getCount() - 1);
+  const reset = () => setCount(initialCount);
+
   return (
-    <div className="counter">
-      <h2>🔢 Counter Component</h2>
-      <div className="count-display">{count}</div>
-      <div className="buttons">
-        <Button onClick={increment} className="btn-primary">
-          ➕ Increment
-        </Button>
-        <Button onClick={decrement} className="btn-secondary">
-          ➖ Decrement
-        </Button>
-        <Button onClick={incrementBy5} className="btn-success">
-          ⚡ +5
-        </Button>
-        <Button onClick={reset} className="btn-danger">
-          🔄 Reset
-        </Button>
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      <h2 style={{ marginBottom: "12px" }}>Count: {getCount()}</h2>
+      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+        <Button onClick={inc}>+</Button>
+        <Button onClick={dec}>−</Button>
+        <Button onClick={reset}>Reset</Button>
       </div>
     </div>
   );
