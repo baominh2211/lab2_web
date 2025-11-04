@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSX Without React - Lab 2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #ec4899;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --border: #e2e8f0;
+      --shadow: rgba(0, 0, 0, 0.1);
+      --shadow-lg: rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root {
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 50px;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .app-header h1 {
+      font-size: 3.5em;
+      font-weight: 800;
+      margin-bottom: 15px;
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+      letter-spacing: -1px;
+    }
+
+    .app-header p {
+      font-size: 1.3em;
+      opacity: 0.95;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 40px;
+      margin-top: 40px;
+    }
+
+    .counter, .todo-app {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeInUp 0.8s ease-out;
+      animation-fill-mode: both;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .counter {
+      animation-delay: 0.1s;
+    }
+
+    .todo-app {
+      animation-delay: 0.2s;
+    }
+
+    .counter:hover, .todo-app:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .counter h2, .todo-app h2 {
+      color: var(--primary);
+      margin-bottom: 30px;
+      font-size: 2em;
+      font-weight: 700;
+      border-bottom: 4px solid var(--primary);
+      padding-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .count-display {
+      text-align: center;
+      font-size: 5em;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 40px 0;
+      text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+      transition: transform 0.3s ease;
+    }
+
+    .count-display:hover {
+      transform: scale(1.05);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 14px 28px;
+      font-size: 1.05em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px var(--shadow);
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    button:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px var(--shadow-lg);
+    }
+
+    button:active {
+      transform: translateY(-1px);
+    }
+
+    button * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, var(--secondary) 100%);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #00d2ff 0%, var(--success) 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #c026d3 100%);
+      color: white;
+    }
+
+    .add-todo-form {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 1.05em;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+      background: var(--light);
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .todo-list {
+      list-style: none;
+      margin: 25px 0;
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+
+    .todo-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .todo-list::-webkit-scrollbar-track {
+      background: var(--light);
+      border-radius: 10px;
+    }
+
+    .todo-list::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 10px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 18px;
+      background: var(--light);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .todo-item:hover {
+      background: white;
+      border-color: var(--primary);
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .todo-item.completed {
+      opacity: 0.7;
+      background: #f1f5f9;
+    }
+
+    .todo-item input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .todo-text {
+      flex: 1;
+      font-size: 1.1em;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .todo-text.completed {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .todo-delete {
+      padding: 10px 18px;
+      font-size: 0.95em;
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .todo-summary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 16px;
+      margin-top: 25px;
+      display: flex;
+      justify-content: space-around;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .todo-summary > div {
+      text-align: center;
+      padding: 10px;
+    }
+
+    .todo-summary strong {
+      display: block;
+      font-size: 1.8em;
+      margin-top: 5px;
+      font-weight: 800;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+      font-size: 1.2em;
+      font-weight: 500;
+    }
+
+    .empty-state::before {
+      content: '📝';
+      display: block;
+      font-size: 4em;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 992px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-header h1 {
+        font-size: 2.5em;
+      }
+
+      .app-header p {
+        font-size: 1.1em;
+      }
+
+      .counter, .todo-app {
+        padding: 30px 20px;
+      }
+
+      .count-display {
+        font-size: 4em;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .app-container {
+        gap: 30px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 15px;
+      }
+
+      .app-header h1 {
+        font-size: 2em;
+      }
+
+      .count-display {
+        font-size: 3em;
+      }
+
+      .counter h2, .todo-app h2 {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
